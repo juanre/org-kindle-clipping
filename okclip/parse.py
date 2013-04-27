@@ -133,6 +133,8 @@ class Clippings(object):
         full_name = self.book_full_name(title)
         if full_name:
             return self.clips[full_name]
+        else:
+            return []
 
 def _test():
     import doctest

@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, codecs
+import os
 import re
 import datetime
 
 # https://github.com/juanre/dashify
 import dashify
-
-import dateutil.parser
 
 def reasonable_length(title):
     """
@@ -45,7 +43,6 @@ def dashed_author(author):
 
 def bibid(title, author, year):
     author = dashed_author(author)
-    #year = dateutil.parser.parse(meta['date']).year
     return (author + '-' + str(year) + '---' +
             reasonable_length(dashify.dash_name(title)))
 

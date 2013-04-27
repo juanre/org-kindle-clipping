@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os, codecs
+import os, codecs, sys, subprocess
 import re
 import datetime
 import parse
@@ -16,25 +16,25 @@ def extract_quotes(orgfile):
 
 class KindleBook(object):
     def __init__(self, title, author, year,
-                 book_file=None, org_path='.', text_path='hola'):
+                 book_file=None, org_path='.', text_path=''):
         self.bibid = bibid(title, author, year)
         self.title = title
         self.book_file = book_file
         self.text_path = text_path
         self.org_path = org_path
 
-        #basefull, ext = os.path.splitext(book)
-        #book_name = os.path.basename(basefull)
-
         self.txtbook_file = None
         if book_file and os.path.exists(book_file):
             self.txtbook_file = os.path.join(text_path, self.bibid + '.txt')
-            print self.txtbook_file, '!!!!'
             if not os.path.exists(self.txtbook_file):
-                #try:
-                    os.system('ebook-convert ' + book_file + ' ' + self.txtbook_file)
-                #except:
-                #    pass
+                try:
+                    devnull = codecs.open(os.devnull, 'w', encoding='utf-8')
+                    subprocess.call(['ebook-convert', book_file,
+                                     self.txtbook_file],
+                                    stdout=devnull, stderr=devnull)
+                    print ' ->', self.txtbook_file
+                except:
+                    pass
 
         if self.txtbook_file and os.path.exists(self.txtbook_file):
             self.txtbook = codecs.open(self.txtbook_file,
@@ -42,7 +42,6 @@ class KindleBook(object):
         else:
             self.txtbook = None
             print '** Warning: No txt book file, no links will be produced.'
-        #self.book_name = book_name.replace('-', ' ')
 
     def find_clipping(self, clipping):
         """The clipping might not be identical to the text in the book.  This
@@ -86,7 +85,7 @@ class KindleBook(object):
             f.write(u'\n\n* ' + kc.book_full_name(self.title) + '\n')
             f.write(u':PROPERTIES:\n:on: <%s>\n:END:\n' %
                     datetime.date.today().isoformat())
-            for clip, meta, note in clippings[:5]:
+            for clip, meta, note in clippings:
                 if meta.kind != 'bookmark':
                     f.write(u'** ' +
                             upcase_first(u' '.join(clip.split(' ')[:10]))
