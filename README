@@ -1,0 +1,3 @@
+okclip --- Kindle clippings in org-mode
+
+This Python module builds an org-mode version of a kinle clippings file.
