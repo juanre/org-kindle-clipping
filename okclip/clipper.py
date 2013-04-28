@@ -5,7 +5,7 @@ import os, codecs, sys, subprocess
 import re
 import datetime
 import parse
-from book import bibid
+from bookid import bibid
 
 def extract_quotes(orgfile):
     return set(re.findall(r'\#\+begin_quote\n(.+?)\n\#\+end_quote',

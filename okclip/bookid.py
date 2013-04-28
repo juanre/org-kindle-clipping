@@ -1,0 +1,124 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import re
+import subprocess
+
+# https://github.com/juanre/dashify
+import dashify
+
+def parse_author(info):
+    """Try to preserve information on what's the last name:
+ http://tex.stackexchange.com/questions/557/how-should-i-type-author-names-in-a-bib-file
+
+    >>> parse_author('Stuckey, Maggie & McGee, Rose Marie Nichols [Stuckey, Maggie]')
+    [u'Stuckey, Maggie', u'McGee, Rose Marie Nichols']
+    >>> parse_author('Cialdini, Robert B. [Cialdini, Robert B.]')
+    [u'Cialdini, Robert B.']
+    """
+    info = re.sub(u'\[.+\]', u'', info)
+    if u'&' in info:
+        return [s.strip() for s in info.split(u'&')]
+    if u'and' in info:
+        return [s.strip() for s in info.split(u'and')]
+    return [info.strip()]
+
+def guess_meta(book):
+    """Tries to figure out the metadata of the book (title, author and
+    publishing year) using the ebook-meta command line tool from
+    calibre.  Install calibre from http://calibre-ebook.com/, then
+    Preferences -> Miscelaneous -> Install command line tools.  It
+    requires dateutil-parser.
+    """
+    import dateutil.parser
+    meta = {}
+    for line in [re.split(r'\s+:\s+', l) for l in
+                 subprocess.check_output(['ebook-meta', book]).splitlines()]:
+        if len(line) != 2:
+            continue
+        what, info = line[0].lower(), line[1]
+        if 'author' in what:
+            meta['author'] = parse_author(info.decode('utf8'))
+        elif 'identifier' in what:
+            if ':' in info:
+                idtype, idcontent = info.split(':')
+                meta[idtype] = idcontent
+            else:
+                meta['identifier'] = info
+        elif 'published' in what:
+            published = dateutil.parser.parse(info)
+            meta['published'] = published
+        else:
+            meta[what] = u'' + info.decode('utf8')
+    return meta
+
+def reasonable_length(title):
+    """
+    >>> reasonable_length('how-children-succeed-grit-curiosity-and-the-hidden-power-of-character')
+    'how-children-succeed-grit-curiosity'
+    >>> reasonable_length('influence')
+    'influence'
+    """
+    words = title.split('-')
+    dont_end =['the', 'and', 'but', 'or', 'yet', 'for',
+               'no', 'nor', 'not', 'so', 'a', 's']
+    length = 7
+    if length < len(words):
+        while words[length-1] in dont_end and length > 1:
+            length -= 1
+    return '-'.join(words[:length])
+
+def dashed_author(author):
+    """
+    >>> dashed_author('Cialdini, Robert B.')
+    'cialdini'
+    >>> dashed_author('Robert B. Cialdini')
+    'cialdini'
+    >>> dashed_author('Robert B.Cialdini')
+    'cialdini'
+    >>> dashed_author('Cialdini')
+    'cialdini'
+    """
+    if not isinstance(author, basestring):
+        author = author[0]
+    if ',' in author:
+        last, first = author.split(',')
+        return dashify.dash_name(last)
+    else:
+        return dashify.dash_name(re.split(r'[\s\.]', author)[-1])
+
+def bibid(title, author, year):
+    author = dashed_author(author)
+    return (author + '-' + str(year) + '---' +
+            reasonable_length(dashify.dash_name(title)))
+
+def bibstr(meta):
+    if 'year' in meta:
+        year = meta['year']
+    elif 'published' in meta:
+        year = meta['published'].year
+    else:
+        year = ''
+    bib = [bibid(meta['title'], meta['author'], year),
+           'title = {%s}' % meta['title'],
+           'author = {%s}' % ' and '.join(meta['author']),
+           'year = {%s}' % str(year)]
+    for field in ['isbn', 'publisher', 'url']:
+        if field in meta:
+            bib.append('%s = {%s}' % (field, meta[field]))
+    return "@book {%s\n}" % ',\n  '.join(bib)
+
+def _test():
+    import doctest
+    doctest.testmod()
+
+def as_main():
+    import sys
+    if len(sys.argv) > 1:
+        for book in sys.argv[1:]:
+            print bibstr(guess_meta(book))
+    else:
+        _test()
+
+if __name__ == '__main__':
+    as_main()
