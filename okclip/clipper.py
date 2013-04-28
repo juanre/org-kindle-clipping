@@ -5,7 +5,7 @@ import os, codecs, sys, subprocess
 import re
 import datetime
 import parse
-from bookid import bibid
+import bookid
 
 def extract_quotes(orgfile):
     return set(re.findall(r'\#\+begin_quote\n(.+?)\n\#\+end_quote',
@@ -15,33 +15,32 @@ def extract_quotes(orgfile):
 
 
 class KindleBook(object):
-    def __init__(self, title, author, year,
-                 book_file=None, org_path='.', text_path=''):
-        self.bibid = bibid(title, author, year)
-        self.title = title
-        self.book_file = book_file
-        self.text_path = text_path
+    def __init__(self, book_file, org_path='.', text_path=''):
+        self.meta = bookid.guess_meta(book_file)
+        self.bibstr, self.bibid = bookid.bibstr(self.meta)
+        self.title = self.meta['title']
         self.org_path = org_path
 
-        self.txtbook_file = None
-        if book_file and os.path.exists(book_file):
-            self.txtbook_file = os.path.join(text_path, self.bibid + '.txt')
-            if not os.path.exists(self.txtbook_file):
-                try:
-                    devnull = codecs.open(os.devnull, 'w', encoding='utf-8')
-                    subprocess.call(['ebook-convert', book_file,
-                                     self.txtbook_file],
-                                    stdout=devnull, stderr=devnull)
-                    print ' ->', self.txtbook_file
-                except:
-                    pass
+        self.txtbook_file = os.path.join(text_path, self.bibid + '.txt')
+        if not os.path.exists(self.txtbook_file):
+            try:
+                devnull = codecs.open(os.devnull, 'w', encoding='utf-8')
+                subprocess.call(['ebook-convert', book_file,
+                                 self.txtbook_file],
+                                stdout=devnull, stderr=devnull)
+                print ' ->', self.txtbook_file
+            except:
+                pass
 
-        if self.txtbook_file and os.path.exists(self.txtbook_file):
+        if os.path.exists(self.txtbook_file):
             self.txtbook = codecs.open(self.txtbook_file,
                                        encoding='utf-8').read()
         else:
             self.txtbook = None
             print '** Warning: No txt book file, no links will be produced.'
+
+    def bibstr(self):
+        return self.bibstr, self.bibid
 
     def find_clipping(self, clipping):
         """The clipping might not be identical to the text in the book.  This
@@ -65,7 +64,6 @@ class KindleBook(object):
         kc = parse.Clippings()
 
         if outfile is None:
-            #outfile = self.book_name.replace(' ', '-') + '.org'
             outfile = os.path.join(self.org_path, self.bibid + '.org')
 
         skip = set([])
@@ -83,8 +81,16 @@ class KindleBook(object):
 
         with codecs.open(outfile, 'a', encoding='utf-8') as f:
             f.write(u'\n\n* ' + kc.book_full_name(self.title) + '\n')
-            f.write(u':PROPERTIES:\n:on: <%s>\n:END:\n' %
+
+            f.write(u':PROPERTIES:\n:on: <%s>\n' %
                     datetime.date.today().isoformat())
+            f.write(u':Custom_ID: %s\n' % self.bibid)
+            f.write(u':author: %s\n' % ' and '.join(self.meta['author']))
+            for k, v in self.meta.iteritems():
+                if not k in ('tags', 'comments', 'author'):
+                    f.write(u':%s: %s\n' % (k, v))
+            f.write(u':END:\n')
+
             for clip, meta, note in clippings:
                 if meta.kind != 'bookmark':
                     f.write(u'** ' +
@@ -108,9 +114,10 @@ class KindleBook(object):
                             u'\n#+end_quote\n\n')
 
 
+def as_main():
+    import sys
+    for fname in sys.argv[1:]:
+        KindleBook(fname).print_clippings()
+
 if __name__ == '__main__':
-    bdir = '/Users/juanre/Dropbox/books/'
-    kb = KindleBook('Where Good Ideas Come From', 'Steven Johnson', '2000',
-                    bdir +
-                    'science/steven-johnson/where-good-ideas-come-from.epub')
-    kb.print_clippings()
+    as_main()

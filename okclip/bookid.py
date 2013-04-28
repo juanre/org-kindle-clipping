@@ -40,10 +40,13 @@ def guess_meta(book):
         if 'author' in what:
             meta['author'] = parse_author(info.decode('utf8'))
         elif 'identifier' in what:
-            if ':' in info:
-                idtype, idcontent = info.split(':')
-                meta[idtype] = idcontent
-            else:
+            identified = False
+            for identifier in [ii.strip() for ii in info.split(',')]:
+                if ':' in identifier:
+                    idtype, idcontent = identifier.split(':')
+                    meta[idtype] = idcontent
+                    identified = True
+            if not identified:
                 meta['identifier'] = info
         elif 'published' in what:
             published = dateutil.parser.parse(info)
@@ -87,9 +90,11 @@ def dashed_author(author):
     else:
         return dashify.dash_name(re.split(r'[\s\.]', author)[-1])
 
-def bibid(title, author, year):
+def bibid(title, author, year=''):
     author = dashed_author(author)
-    return (author + '-' + str(year) + '---' +
+    if year:
+        year = '-' + str(year)
+    return (author + year + '---' +
             reasonable_length(dashify.dash_name(title)))
 
 def bibstr(meta):
@@ -99,14 +104,15 @@ def bibstr(meta):
         year = meta['published'].year
     else:
         year = ''
-    bib = [bibid(meta['title'], meta['author'], year),
+    bid = bibid(meta['title'], meta['author'], year)
+    bib = [bid,
            'title = {%s}' % meta['title'],
            'author = {%s}' % ' and '.join(meta['author']),
            'year = {%s}' % str(year)]
     for field in ['isbn', 'publisher', 'url']:
         if field in meta:
             bib.append('%s = {%s}' % (field, meta[field]))
-    return "@book {%s\n}" % ',\n  '.join(bib)
+    return "@book {%s\n}" % ',\n  '.join(bib), bid
 
 def _test():
     import doctest
@@ -116,7 +122,7 @@ def as_main():
     import sys
     if len(sys.argv) > 1:
         for book in sys.argv[1:]:
-            print bibstr(guess_meta(book))
+            print bibstr(guess_meta(book))[0]
     else:
         _test()
 

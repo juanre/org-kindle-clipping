@@ -9,5 +9,7 @@ setup(name='okclip',
       author_email='juan@juanreyero.com',
       url='http://juanreyero.com/',
       packages=['okclip'],
+      entry_points = {
+            'console_scripts': ['bookbib = okclip.bookid:as_main',
+                                'bookclips = okclip.clipper:as_main']},
       test_suite='okclip.test.okclip_test.suite')
-
