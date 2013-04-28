@@ -1,3 +1,51 @@
 okclip --- Kindle clippings in org-mode
 
-This Python module builds an org-mode version of a kinle clippings file.
+Juan Reyero, http://juanreyero.com
+
+This Python module builds an org-mode version of a book's clippings as found in a kindle clippings files.
+
+Please note that this is alpha code.  I am still changing it almost as fast as I use it.
+
+It looks for clippings in
+
+'/Volumes/Kindle/documents/My Clippings.txt'
+
+or in
+
+'kindle-clippings.txt'.
+
+If the former exists it is copied onto the later as a backup.
+
+It produces a unique id that makes also a reasonable bibtex id for the book, and that looks like:
+
+adams-2009---dirk-gently-s-holistic-detective-agency
+
+By default it will create a new .org file with an entry for the book, named with the book id:
+
+adams-2009---dirk-gently-s-holistic-detective-agency.org
+
+But if the print_clippings function is called with an existing output file it will append to it.
+
+The entry for the book includes all the available metadata and a link to the book file.  A text version of the book is created, and each clipping includes an org-mode link to the point of the text file where the clipping appears.  This makes it slow.
+
+If the org-mode file to which the clippings will be aded exists, and a clipping is already present, it will not be added again.
+
+
+REQUIREMENTS
+
+- dashify (https://github.com/juanre/dashify)
+- dateutil.parser (http://labix.org/python-dateutil)
+- ebook-meta and ebook-convert, command line tools from calibre.  Install calibre from http://calibre-ebook.com/, then Preferences -> Miscelaneous -> Install command line tools.
+
+
+SCRIPTS
+
+It exports two scripts:
+
+- bookbib book_file[s]
+
+  Outputs the bibtex entry of the book[s].
+
+- bookclips book_file[s]
+
+  Prints the clippings for the book[s], each in its own file.

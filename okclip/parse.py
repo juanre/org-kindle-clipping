@@ -101,10 +101,7 @@ def parse_clippings(clips_file):
 
 
 class Clippings(object):
-    def __init__(self,
-                 clips_file='/Volumes/Kindle/documents/My Clippings.txt',
-                 bu_clips_file='kindle-clippings.txt',
-                 backup=True):
+    def __init__(self, clips_file, bu_clips_file, backup=True):
         parse_from = bu_clips_file
         if os.path.exists(clips_file):
             parse_from = clips_file

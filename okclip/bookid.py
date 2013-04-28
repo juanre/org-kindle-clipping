@@ -7,6 +7,13 @@ import subprocess
 # https://github.com/juanre/dashify
 import dashify
 
+def ensure_comma(author):
+    if not u',' in author:
+        author = author.split(' ')
+        if len(author) > 1:
+            return author[-1] + u', ' + u' '.join(author[:-1])
+    return author
+
 def parse_author(info):
     """Try to preserve information on what's the last name:
  http://tex.stackexchange.com/questions/557/how-should-i-type-author-names-in-a-bib-file
@@ -15,13 +22,17 @@ def parse_author(info):
     [u'Stuckey, Maggie', u'McGee, Rose Marie Nichols']
     >>> parse_author('Cialdini, Robert B. [Cialdini, Robert B.]')
     [u'Cialdini, Robert B.']
+    >>> parse_author('Robert B. Cialdini')
+    [u'Cialdini, Robert B.']
     """
     info = re.sub(u'\[.+\]', u'', info)
     if u'&' in info:
-        return [s.strip() for s in info.split(u'&')]
-    if u'and' in info:
-        return [s.strip() for s in info.split(u'and')]
-    return [info.strip()]
+        out = [s.strip() for s in info.split(u'&')]
+    elif u'and' in info:
+        out = [s.strip() for s in info.split(u'and')]
+    else:
+        out = [info.strip()]
+    return [ensure_comma(a) for a in out]
 
 def guess_meta(book):
     """Tries to figure out the metadata of the book (title, author and
@@ -92,9 +103,11 @@ def dashed_author(author):
 
 def bibid(title, author, year=''):
     author = dashed_author(author)
+    if author:
+        author = author + '-'
     if year:
-        year = '-' + str(year)
-    return (author + year + '---' +
+        year = str(year) + '-'
+    return (author + year + '--' +
             reasonable_length(dashify.dash_name(title)))
 
 def bibstr(meta):

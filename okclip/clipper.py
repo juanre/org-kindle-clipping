@@ -15,7 +15,12 @@ def extract_quotes(orgfile):
 
 
 class KindleBook(object):
-    def __init__(self, book_file, org_path='.', text_path=''):
+    def __init__(self, book_file, org_path='.', text_path='',
+                 clips_file='/Volumes/Kindle/documents/My Clippings.txt',
+                 bu_clips_file='kindle-clippings.txt'):
+        self.clips_file = clips_file
+        self.bu_clips_file = bu_clips_file
+        self.book_file = book_file
         self.meta = bookid.guess_meta(book_file)
         self.bibstr, self.bibid = bookid.bibstr(self.meta)
         self.title = self.meta['title']
@@ -61,7 +66,7 @@ class KindleBook(object):
         def upcase_first(s):
             return s[0].upper() + s[1:]
 
-        kc = parse.Clippings()
+        kc = parse.Clippings(self.clips_file, self.bu_clips_file)
 
         if outfile is None:
             outfile = os.path.join(self.org_path, self.bibid + '.org')
@@ -80,7 +85,7 @@ class KindleBook(object):
             return
 
         with codecs.open(outfile, 'a', encoding='utf-8') as f:
-            f.write(u'\n\n* ' + kc.book_full_name(self.title) + '\n')
+            f.write(u'\n* ' + kc.book_full_name(self.title) + '\n')
 
             f.write(u':PROPERTIES:\n:on: <%s>\n' %
                     datetime.date.today().isoformat())
@@ -90,6 +95,8 @@ class KindleBook(object):
                 if not k in ('tags', 'comments', 'author'):
                     f.write(u':%s: %s\n' % (k, v))
             f.write(u':END:\n')
+
+            f.write(u'[[file:%s][Master]].\n\n' % self.book_file)
 
             for clip, meta, note in clippings:
                 if meta.kind != 'bookmark':
