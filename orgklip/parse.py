@@ -101,14 +101,18 @@ def parse_clippings(clips_file):
 
 
 class Clippings(object):
-    def __init__(self, clips_file, bu_clips_file, backup=True):
+    def __init__(self, clips_file, bu_clips_file=None):
         parse_from = bu_clips_file
         if os.path.exists(clips_file):
             parse_from = clips_file
-            if backup:
+            if bu_clips_file:
                 import shutil
                 shutil.copy(clips_file, bu_clips_file)
-        self.clips = parse_clippings(parse_from)
+        if os.path.exists(parse_from):
+            self.clips = parse_clippings(parse_from)
+        else:
+            print "** Warning, no clippings file found."
+            self.clips = {}
 
     def list_book_titles(self):
         return sorted(self.clips.keys())
