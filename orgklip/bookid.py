@@ -61,7 +61,7 @@ def guess_meta(book):
                 meta['identifier'] = info
         elif 'published' in what:
             published = dateutil.parser.parse(info)
-            meta['published'] = published
+            meta['date'] = published
         else:
             meta[what] = u'' + info.decode('utf8')
     return meta
@@ -113,8 +113,8 @@ def bibid(title, author, year=''):
 def bibstr(meta):
     if 'year' in meta:
         year = meta['year']
-    elif 'published' in meta:
-        year = meta['published'].year
+    elif 'date' in meta:
+        year = meta['date'].year
     else:
         year = ''
     bid = bibid(meta['title'], meta['author'], year)
