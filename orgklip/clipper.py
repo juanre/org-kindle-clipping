@@ -116,12 +116,6 @@ class KindleBook(object):
 
         kc = parse.Clippings(self.clips_file, self.bu_clips_file)
 
-        clippings = [(clip, meta, note)
-                     for clip, meta, note in kc.list_book(self.title)
-                     if not (upcase_first(clip) in skip)]
-        if not clippings:
-            return
-
         if not os.path.exists(self.org_path):
             os.makedirs(self.org_path)
 
@@ -131,7 +125,14 @@ class KindleBook(object):
         skip = set([])
         if os.path.exists(outfile):
             skip = extract_quotes(outfile)
-        else:
+
+        clippings = [(clip, meta, note)
+                     for clip, meta, note in kc.list_book(self.title)
+                     if not (upcase_first(clip) in skip)]
+        if not clippings:
+            return
+
+        if not os.path.exists(outfile):
             with codecs.open(outfile, 'w', encoding='utf-8') as f:
                 f.write(u'# -*- coding: utf-8 -*-\n')
 

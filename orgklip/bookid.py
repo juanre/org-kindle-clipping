@@ -12,6 +12,8 @@ def ensure_comma(author):
         author = author.split(' ')
         if len(author) > 1:
             return author[-1] + u', ' + u' '.join(author[:-1])
+        else:
+            return u'' + author[0]
     return author
 
 def parse_author(info):
@@ -24,6 +26,8 @@ def parse_author(info):
     [u'Cialdini, Robert B.']
     >>> parse_author('Robert B. Cialdini')
     [u'Cialdini, Robert B.']
+    >>> parse_author(u'Cialdini')
+    [u'Cialdini']
     """
     info = re.sub(u'\[.+\]', u'', info)
     if u'&' in info:
