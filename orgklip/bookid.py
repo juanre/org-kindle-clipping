@@ -32,8 +32,8 @@ def parse_author(info):
     info = re.sub(u'\[.+\]', u'', info)
     if u'&' in info:
         out = [s.strip() for s in info.split(u'&')]
-    elif u'and' in info:
-        out = [s.strip() for s in info.split(u'and')]
+    elif u' and ' in info:
+        out = [s.strip() for s in info.split(u' and ')]
     else:
         out = [info.strip()]
     return [ensure_comma(a) for a in out]
@@ -54,6 +54,8 @@ def guess_meta(book):
         what, info = line[0].lower(), line[1]
         if 'author' in what:
             meta['author'] = parse_author(info.decode('utf8'))
+        if 'language' in what:
+            meta['language'] = info.decode('utf8')
         elif 'identifier' in what:
             identified = False
             for identifier in [ii.strip() for ii in info.split(',')]:
