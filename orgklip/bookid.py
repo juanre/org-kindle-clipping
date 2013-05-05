@@ -80,13 +80,26 @@ def reasonable_length(title):
     'influence'
     """
     words = title.split('-')
-    dont_end =['the', 'and', 'but', 'or', 'yet', 'for',
-               'no', 'nor', 'not', 'so', 'a', 's']
+    dont_end =['the', 'and', 'but', 'or', 'yet', 'for', 'with',
+               'no', 'nor', 'not', 'so', 'a', 's', 'that']
     length = 7
     if length < len(words):
         while words[length-1] in dont_end and length > 1:
             length -= 1
     return '-'.join(words[:length])
+
+def dashed_title(title):
+    """
+    >>> dashed_title(u'This Very Long and Unwieldy Title That Never Ends')
+    u'this-very-long-and-unwieldy-title'
+    >>> dashed_title(u'This Title: With a Subtitle')
+    u'this-title'
+    >>> dashed_title('this title (with paren)')
+    u'this-title'
+    """
+    title = title.split(u':')[0]
+    title = re.sub(u'\(.*\)', '', title).strip()
+    return reasonable_length(dashify.dash_name(title))
 
 def dashed_author(author):
     """
@@ -113,8 +126,10 @@ def bibid(title, author, year=''):
         author = author + '-'
     if year:
         year = str(year) + '-'
-    return (author + year + '--' +
-            reasonable_length(dashify.dash_name(title)))
+    title = dashed_title(title)
+    if year or author:
+        title = '--' + title
+    return (author + year + title)
 
 def bibstr(meta):
     if 'year' in meta:

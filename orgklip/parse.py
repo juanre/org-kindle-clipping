@@ -121,6 +121,7 @@ class Clippings(object):
         if title in self.clips:
             return title
 
+        title = title.split(':')[0]
         for k in self.clips.keys():
             if title in k:
                 return k
