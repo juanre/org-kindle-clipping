@@ -78,12 +78,16 @@ class KindleBook(object):
                 os.makedirs(text_path)
             try:
                 devnull = codecs.open(os.devnull, 'w', encoding='utf-8')
-                subprocess.call(['ebook-convert', book_file,
-                                 self.txtbook_file],
-                                stdout=devnull, stderr=devnull)
-                print ' ->', self.txtbook_file
+                if subprocess.call(['ebook-convert', book_file,
+                                    self.txtbook_file],
+                                    stdout=devnull, stderr=devnull):
+                    print "** Error converting to", self.txtbook_file, \
+                      "(maybe DRMed book?)"
+                else:
+                    print ' ->', self.txtbook_file
             except:
-                pass
+                print "** Error converting to", self.txtbook_file, \
+                  "(maybe calibre's ebook-convert not installed?)"
 
         if os.path.exists(self.txtbook_file):
             self.txtbook = codecs.open(self.txtbook_file,
