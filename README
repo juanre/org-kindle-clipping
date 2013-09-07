@@ -2,6 +2,13 @@ orgklip --- Kindle clippings to org-mode
 
 Juan Reyero, http://juanreyero.com
 
+I am not maintaining this package.  Please take a look at
+
+https://github.com/juanre/org-bib
+
+for what I am using now.
+
+
 This Python module builds an org-mode version of a book's clippings as found in a kindle clippings files.
 
 Please note that this is alpha code.  I am still changing it almost as fast as I use it.
