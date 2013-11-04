@@ -2,13 +2,13 @@
 """
 
 import orgklip.parse
-import orgklip.bookid
+import orgklip.docid
 
 import unittest, doctest
 
 def suite():
     tests = [doctest.DocTestSuite(orgklip.parse),
-             doctest.DocTestSuite(orgklip.bookid)]
+             doctest.DocTestSuite(orgklip.docid)]
     return unittest.TestSuite(tests)
 
 if __name__ == '__main__':

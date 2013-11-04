@@ -10,7 +10,6 @@ setup(name='orgklip',
       url='http://juanreyero.com/',
       packages=['orgklip'],
       entry_points = {
-            'console_scripts': ['bookbib = orgklip.bookid:as_main',
+            'console_scripts': ['bookbib = orgklip.docid:as_main',
                                 'bookclips = orgklip.clipper:as_main']},
       test_suite='orgklip.test.orgklip_test.suite')
-

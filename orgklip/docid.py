@@ -3,6 +3,7 @@
 
 import re
 import subprocess
+import dateutil.parser
 
 # https://github.com/juanre/dashify
 import dashify
@@ -38,14 +39,17 @@ def parse_author(info):
         out = [info.strip()]
     return [ensure_comma(a) for a in out]
 
+def ask_meta(meta, book):
+    return meta
+
 def guess_meta(book):
     """Tries to figure out the metadata of the book (title, author and
     publishing year) using the ebook-meta command line tool from
     calibre.  Install calibre from http://calibre-ebook.com/, then
-    Preferences -> Miscelaneous -> Install command line tools.  It
-    requires dateutil-parser.
+    Preferences -> Miscelaneous -> Install command line tools.
+
+    It requires dateutil-parser.
     """
-    import dateutil.parser
     meta = {}
     for line in [re.split(r'\s+:\s+', l) for l in
                  subprocess.check_output(['ebook-meta', book]).splitlines()]:
@@ -131,22 +135,37 @@ def bibid(title, author, year=''):
         title = '--' + title
     return (author + year + title)
 
-def bibstr(meta):
+def bibstr(docfile, doctype='book', meta=None):
+    """Returns a bibtex string for the document.  If the meta info is
+    not present it will try to guess it.  It needs a year or date,
+    title, and author.  If a bibstr entry is already in meta it will
+    replace its id with an id computed from the title, author and
+    date, and use that.
+    """
+    if meta is None:
+        meta = guess_meta(docfile)
     if 'year' in meta:
         year = meta['year']
     elif 'date' in meta:
         year = meta['date'].year
     else:
         year = ''
-    bid = bibid(meta['title'], meta['author'], year)
+    title = meta.get('title', 'no title')
+    author = meta.get('author', ['no author'])
+    bid = bibid(title, author, year)
+    meta['bibid'] = bid
+
+    if 'bibstr' in meta:
+        return re.sub(u'\{.+,', u'{%s,' % bid, meta['bibstr'], count=1), meta
+
     bib = [bid,
-           'title = {%s}' % meta['title'],
-           'author = {%s}' % ' and '.join(meta['author']),
+           'title = {%s}' % title,
+           'author = {%s}' % ' and '.join(author),
            'year = {%s}' % str(year)]
     for field in ['isbn', 'publisher', 'url']:
         if field in meta:
             bib.append('%s = {%s}' % (field, meta[field]))
-    return "@book {%s\n}" % ',\n  '.join(bib), bid
+    return "@%s {%s\n}" % (doctype, ',\n  '.join(bib)), meta
 
 def _test():
     import doctest
@@ -156,7 +175,7 @@ def as_main():
     import sys
     if len(sys.argv) > 1:
         for book in sys.argv[1:]:
-            print bibstr(guess_meta(book))[0]
+            print bibstr(book)[0]
     else:
         _test()
 

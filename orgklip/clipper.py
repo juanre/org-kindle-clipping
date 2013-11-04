@@ -42,11 +42,10 @@ __date__ = "2013-04-29"
 __author__ = "Juan Reyero, http://juanreyero.com"
 
 
-import os, codecs, sys, subprocess
-import re
+import os, codecs, sys, subprocess, re
 import datetime
-import parse
-import bookid
+import parse, docid
+
 
 def extract_quotes(orgfile):
     return set(re.findall(r'\#\+begin_quote\n(.+?)\n\#\+end_quote',
@@ -54,6 +53,13 @@ def extract_quotes(orgfile):
                                       encoding='utf-8').read(),
                           re.DOTALL|re.IGNORECASE))
 
+def extract_ids(orgfile):
+    return set(re.findall(r':custom_id: (.+?)\n',
+                          codecs.open(orgfile,
+                                      encoding='utf-8').read(),
+                          re.DOTALL|re.IGNORECASE))
+
+#:Custom_ID: harford-2011---adapt
 
 class KindleBook(object):
     """Associated to a mobi book file, it knows how to extract the
@@ -63,17 +69,21 @@ class KindleBook(object):
     """
     def __init__(self, book_file, org_path='.', text_path='',
                  clips_file='/Volumes/Kindle/documents/My Clippings.txt',
-                 bu_clips_file='kindle-clippings.txt'):
+                 bu_clips_file='kindle-clippings.txt', meta=None):
         self.clips_file = clips_file
         self.bu_clips_file = bu_clips_file
         self.book_file = book_file
-        self.meta = bookid.guess_meta(book_file)
-        self.bibstr, self.bibid = bookid.bibstr(self.meta)
+        if meta is None:
+            self.meta = docid.bibstr(book_file)[1]
+        else:
+            self.meta = meta
+        self.bibid = self.meta['bibid']
         self.title = self.meta['title']
         self.org_path = org_path
 
         self.txtbook_file = os.path.join(text_path, self.bibid + '.txt')
-        if not os.path.exists(self.txtbook_file):
+        if not os.path.exists(self.txtbook_file) and \
+               os.path.splitext(book_file)[1] != '.pdf':
             if not os.path.exists(text_path):
                 os.makedirs(text_path)
             try:
@@ -95,9 +105,6 @@ class KindleBook(object):
         else:
             self.txtbook = None
             print '** Warning: No txt book file, no links will be produced.'
-
-    def bibstr(self):
-        return self.bibstr, self.bibid
 
     def find_clipping(self, clipping):
         """The clipping might not be identical to the text in the book.  This
@@ -127,13 +134,17 @@ class KindleBook(object):
             outfile = os.path.join(self.org_path, self.bibid + '.org')
 
         skip = set([])
+        present_ids = set([])
         if os.path.exists(outfile):
             skip = extract_quotes(outfile)
+            present_ids = extract_ids(outfile)
 
         clippings = [(clip, meta, note)
                      for clip, meta, note in kc.list_book(self.title)
                      if not (upcase_first(clip) in skip)]
-        if not clippings:
+
+        ext = os.path.splitext(self.book_file)[1]
+        if not clippings and (ext != '.pdf' or self.bibid in present_ids):
             return
 
         if not os.path.exists(outfile):
@@ -148,7 +159,8 @@ class KindleBook(object):
             f.write(u':Custom_ID: %s\n' % self.bibid)
             f.write(u':author: %s\n' % ' and '.join(self.meta['author']))
             for k, v in self.meta.iteritems():
-                if not k in ('tags', 'comments', 'author'):
+                if not k in ('tags', 'comments', 'author', 'author(s)',
+                             'book producer', 'bibstr'):
                     f.write(u':%s: %s\n' % (k, v))
             f.write(u':END:\n')
 
